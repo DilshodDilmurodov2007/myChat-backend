@@ -15,8 +15,8 @@ router.put("/update-profile", protectRoute, updateProfile)
 router.get("/check", protectRoute, (req, res)=> res.status(200).json(req.user))
 
 // test
-// router.get("/test", arcjetProtection, (req,res) => {
-//     res.status(200).json({message:"Test route"})
-// })
+router.get("/test", arcjetProtection, (req,res) => {
+    res.status(200).json({message:"Test route"})
+})
 export default router
  
