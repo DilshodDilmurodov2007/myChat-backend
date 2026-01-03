@@ -14,8 +14,23 @@ import { app, server } from './lib/socket.js'
 const __dirname = path.resolve()
 
 const PORT = process.env.PORT || 5000; 
+const allowedOrigins = [
+  'http://localhost:5173', // for local dev
+  'https://my-chat-backend-y7d4.vercel.app' // your deployed frontend
+];
 
-app.use(cors({origin: process.env.CLIENT_URL, credentials: true}))
+app.use(cors({
+  origin: function(origin, callback){
+    // allow requests with no origin like mobile apps or curl
+    if(!origin) return callback(null, true);
+    if(allowedOrigins.indexOf(origin) === -1){
+      const msg = `The CORS policy for this site does not allow access from the specified Origin.`;
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true // if you use cookies or auth headers
+}));
 app.use(express.json({limit: "20mb"})) // req.body
 app.use(cookieParser())
 
