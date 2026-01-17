@@ -15,6 +15,7 @@ const __dirname = path.resolve()
 
 const PORT = process.env.PORT || 3000; 
 
+app.set("trust proxy", 1);
 app.use(cors({origin: true, credentials: true}))
 app.use(express.json({limit: "20mb"})) // req.body
 app.use(cookieParser())
