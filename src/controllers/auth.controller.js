@@ -5,90 +5,106 @@ import User from "../models/User.js"
 import bcrypt from 'bcryptjs'
 
 export const signup = async (req, res) => {
-    const {fullName, email, password} = req.body
-    try {
-        if(!fullName || !email || !password) {
-            return res.status(400).json({message:"All fields are required"})
-        }
-         if(password.length < 6) {
-            return res.status(400).json({message:"Password must be at least 6 characters"})
-        }
-        // check if email is valid: regex
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({message: "Invalid email format"})
-        }
+  const { fullName, email, password } = req.body
+  try {
+    if (!fullName || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" })
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters" })
+    }
+    // check if email is valid: regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" })
+    }
 
-    const user = await User.findOne({email:email,})
-    if (user) return res.status(400).json({message: "Email already exists"})
-    
+    const user = await User.findOne({ email: email, })
+    if (user) return res.status(400).json({ message: "Email already exists" })
+
     // passport hashing
     // 123456 => #535Tge5#@$%^
     const salt = await bcrypt.genSalt(10) // the length of the string
     const hashedPassword = await bcrypt.hash(password, salt)
 
     const newUser = new User({
-        fullName,
-        email,
-        password: hashedPassword
+      fullName,
+      email,
+      password: hashedPassword
     })
     if (newUser) {
-        // Persist user first, then issue auth cookie
-        const savedUser = await newUser.save()
-        generateToken(savedUser.id, res)
+      // Persist user first, then issue auth cookie
+      const savedUser = await newUser.save()
 
-        res.status(201).json({
-            id: newUser.id,
-            fullName: newUser.fullName,
-            email: newUser.email,
-            profilePic: newUser.profilePic, 
-        })
-        
-        // send a welcome email to user
-        try {
-            await sendWelcomeEmail(savedUser.email, savedUser.fullName, process.env.CLIENT_URL)
-        } catch (error) {
-            console.error(error);
-        }
+      generateToken(savedUser.id, res)
+
+      res.status(200).json({
+        user: {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+          profilePic: user.profilePic,
+        },
+        token,
+      });
+
+
+      // send a welcome email to user
+      try {
+        await sendWelcomeEmail(savedUser.email, savedUser.fullName, process.env.CLIENT_URL)
+      } catch (error) {
+        console.error(error);
+      }
 
     } else {
-        res.status(400).json({message:"Invalid user data"})
+      res.status(400).json({ message: "Invalid user data" })
     }
 
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({message: "Internal server error"})
-    }
+  } catch (error) {
+    console.log(error)
+    res.status(500).json({ message: "Internal server error" })
+  }
 }
 
 export const login = async (req, res) => {
-    const {email, password} = req.body
-    if (!email || !password) return res.status(400).json({message:"Email and Password are required."})
-    try {
-        const user = await User.findOne({email})
-        if (!user) return res.status(400).json({message: "Invalid Credentials"})
-        // never tell the client which one is incorrect: password or email
-        const isPasswordCorrect = await bcrypt.compare(password, user.password)
-        if(!isPasswordCorrect) return res.status(400).json({message: "Invalid Credentials"})
+  const { email, password } = req.body
+  if (!email || !password) return res.status(400).json({ message: "Email and Password are required." })
+  try {
+    const user = await User.findOne({ email })
+    if (!user) return res.status(400).json({ message: "Invalid Credentials" })
+    // never tell the client which one is incorrect: password or email
+    const isPasswordCorrect = await bcrypt.compare(password, user.password)
+    if (!isPasswordCorrect) return res.status(400).json({ message: "Invalid Credentials" })
 
-        generateToken(user.id, res)
+    generateToken(user.id, res)
 
-        res.status(200).json({
-            id: user.id,
-            fullName: user.fullName,
-            email: user.email,
-            profilePic: user.profilePic, 
-        })
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({message: "Internal Server Error"})
-    }
+    res.status(200).json({
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        profilePic: user.profilePic,
+      },
+      token,
+    });
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal Server Error" })
+  }
 }
 
 export const logout = async (_, res) => {
-   res.cookie("jwt", "", {maxAge:0}) 
-   res.status(200).json({message: "Logout successfully!"})
-}
+  const isProd = process.env.NODE_ENV === "production";
+  res.cookie("jwt", "", {
+    maxAge: 0,
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    path: "/",
+  });
+  res.status(200).json({ message: "Logout successfully!" });
+};
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 export const updateProfile = async (req, res) => {
