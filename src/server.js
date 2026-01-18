@@ -14,9 +14,18 @@ import { app, server } from './lib/socket.js'
 const __dirname = path.resolve()
 
 const PORT = process.env.PORT || 3000; 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://ichat.metaware.uz"
+];
+
 
 app.set("trust proxy", 1);
-app.use(cors({origin: true, credentials: true}))
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
 app.use(express.json({limit: "20mb"})) // req.body
 app.use(cookieParser())
 

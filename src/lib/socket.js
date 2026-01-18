@@ -6,10 +6,15 @@ import { socketAuthMiddleware } from "../middleware/socket.middleware.js";
 
 const app = express();
 const server = http.createServer(app);
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://ichat.metaware.uz"
+];
 
 const io = new Server(server, {
     cors: {
-        origin: true,
+        origin: allowedOrigins,
         credentials: true,
     },
 });
