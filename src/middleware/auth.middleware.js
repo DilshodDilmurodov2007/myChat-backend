@@ -4,6 +4,9 @@ import "dotenv/config"
 
 export const protectRoute = async (req, res, next) => {
     try {
+        if (!process.env.JWT_SECRET) {
+            return res.status(500).json({message: "JWT secret not configured"})
+        }
         const token = req.cookies.jwt
         if(!token) return res.status(401).json({message: "Unauthorized - No token provided"})
         
@@ -17,6 +20,9 @@ export const protectRoute = async (req, res, next) => {
         next()
 
     } catch (error) {
+        if (error?.name === "TokenExpiredError" || error?.name === "JsonWebTokenError") {
+            return res.status(401).json({message: "Unauthorized - Invalid token"})
+        }
         console.error(error)
         res.status(500).json({message: "Internal Server Error"})
     }

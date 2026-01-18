@@ -5,6 +5,9 @@ import User from "../models/User.js";
 
 export const socketAuthMiddleware = async(socket, next) => {
     try {
+        if (!process.env.JWT_SECRET) {
+            return next(new Error("Authentication error: JWT secret not configured"));
+        }
         const token = socket.handshake.headers.cookie
             ?.split("; ")
             .find((row) => row.startsWith("jwt="))
@@ -34,6 +37,9 @@ export const socketAuthMiddleware = async(socket, next) => {
         
         next();
     } catch (error) {
+        if (error?.name === "TokenExpiredError" || error?.name === "JsonWebTokenError") {
+            return next(new Error("Authentication error: Invalid token"));
+        }
         console.error("Socket authentication error:", error);
         next(new Error("Authentication error"));
     }

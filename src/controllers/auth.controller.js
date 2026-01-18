@@ -103,7 +103,7 @@ export const updateProfile = async (req, res) => {
       return res.status(401).json({ message: 'Unauthorized' })
     }
 
-    // 🧠 Decode base64 and check size
+    // Decode base64 and check size
     const base64Data = profilePic.split(',')[1]
     if (!base64Data) {
       return res.status(400).json({ message: 'Invalid image format' })
@@ -138,4 +138,5 @@ export const updateProfile = async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' })
   }
 }
+
 
